@@ -1,0 +1,75 @@
+.coworker {
+  padding-top: 80px;
+}
+
+.coworker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-top: 56px;
+}
+
+@media (max-width: 820px) {
+  .coworker-grid { grid-template-columns: 1fr; }
+}
+
+.coworker-card {
+  position: relative;
+  padding: 32px 30px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(156,131,166,0.18), transparent 60%),
+    linear-gradient(180deg, rgba(51,39,60,0.65) 0%, rgba(34,26,46,0.65) 100%);
+  transition: border-color 0.3s var(--ease), transform 0.3s var(--ease);
+  overflow: hidden;
+}
+
+.coworker-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+
+.coworker-label {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(156,131,166,0.16);
+  border: 1px solid var(--border-strong);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.coworker-card h3 {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+  line-height: 1.25;
+}
+
+.coworker-card p {
+  font-size: 15.5px;
+  color: var(--text-dim);
+  line-height: 1.65;
+}
+
+.coworker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.coworker-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  color: var(--text);
+}

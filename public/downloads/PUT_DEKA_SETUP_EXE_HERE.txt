@@ -1,0 +1,12 @@
+Put your built Windows installer in this folder and name it exactly:
+
+    Deka-Setup.exe
+
+The Hero and CTA download buttons link to /downloads/Deka-Setup.exe.
+
+Vite serves anything inside /public at the site root, so:
+  public/downloads/Deka-Setup.exe   ->   https://yoursite.com/downloads/Deka-Setup.exe
+
+If you change the filename, update WIN_DOWNLOAD in:
+  src/components/Hero.jsx
+  src/components/CTA.jsx

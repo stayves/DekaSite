@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+.vite
+.DS_Store
+*.log
+.env
+.env.local
+.claude/settings.local.json
+public/downloads/*.exe
+public/downloads/*.dmg
+public/downloads/*.zip
