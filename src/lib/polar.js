@@ -1,5 +1,6 @@
 const PRO_CHECKOUT_URL = import.meta.env.VITE_POLAR_PRO_CHECKOUT_URL
 const TEAM_CONTACT_URL = import.meta.env.VITE_POLAR_TEAM_CONTACT_URL
+const CUSTOMER_PORTAL_URL = import.meta.env.VITE_POLAR_CUSTOMER_PORTAL_URL
 
 // Flip to `true` once Polar is wired up and you're ready to take payments.
 export const isProLaunched = false
@@ -7,6 +8,13 @@ export const isProLaunched = false
 export const isPolarConfigured = Boolean(
   PRO_CHECKOUT_URL && !PRO_CHECKOUT_URL.includes('REPLACE_ME')
 )
+
+export function getCustomerPortalUrl(user) {
+  if (!CUSTOMER_PORTAL_URL) return null
+  const u = new URL(CUSTOMER_PORTAL_URL)
+  if (user?.email) u.searchParams.set('customer_email', user.email)
+  return u.toString()
+}
 
 export function getProCheckoutUrl(user) {
   if (!isPolarConfigured) return null

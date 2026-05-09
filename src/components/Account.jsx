@@ -1,13 +1,39 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
-import { getProCheckoutUrl, isPolarConfigured, isProLaunched } from '../lib/polar.js'
+import {
+  getProCheckoutUrl,
+  getCustomerPortalUrl,
+  isPolarConfigured,
+  isProLaunched,
+} from '../lib/polar.js'
+import { useSubscription, isEntitled } from '../lib/subscription.js'
 import './Account.css'
+
+const STATUS_LABEL = {
+  active: 'Active',
+  trialing: 'Trial',
+  past_due: 'Past due',
+  canceled: 'Canceled',
+  incomplete: 'Incomplete',
+  incomplete_expired: 'Expired',
+  unpaid: 'Unpaid',
+}
+
+function formatDate(iso) {
+  if (!iso) return null
+  try {
+    return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  } catch {
+    return null
+  }
+}
 
 export default function Account() {
   const { user, loading, signOut, configured } = useAuth()
   const navigate = useNavigate()
   const [signingOut, setSigningOut] = useState(false)
+  const { subscription, loading: subLoading } = useSubscription(user)
 
   useEffect(() => {
     if (!loading && !user && configured) {
@@ -51,6 +77,11 @@ export default function Account() {
     )
   }
 
+  const entitled = isEntitled(subscription)
+  const planLabel = entitled ? 'Pro' : 'Free'
+  const statusLabel = subscription ? STATUS_LABEL[subscription.status] || subscription.status : null
+  const renewsOn = subscription?.current_period_end ? formatDate(subscription.current_period_end) : null
+  const portalUrl = getCustomerPortalUrl(user)
   const proUrl = getProCheckoutUrl(user)
 
   return (
@@ -72,12 +103,40 @@ export default function Account() {
             </div>
             <div>
               <dt>Plan</dt>
-              <dd>Free <span className="account-hint">— upgrade for unlimited actions</span></dd>
+              <dd>
+                {subLoading ? (
+                  <span className="account-hint">Loading…</span>
+                ) : entitled ? (
+                  <>
+                    Pro
+                    {statusLabel && statusLabel !== 'Active' && (
+                      <span className="account-hint"> — {statusLabel}</span>
+                    )}
+                    {subscription?.cancel_at_period_end && renewsOn && (
+                      <span className="account-hint"> — ends {renewsOn}</span>
+                    )}
+                    {!subscription?.cancel_at_period_end && renewsOn && (
+                      <span className="account-hint"> — renews {renewsOn}</span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    Free
+                    <span className="account-hint">
+                      {isProLaunched ? ' — upgrade for unlimited actions' : ' — Pro launches within 24h'}
+                    </span>
+                  </>
+                )}
+              </dd>
             </div>
           </dl>
 
           <div className="account-actions">
-            {isProLaunched && isPolarConfigured && proUrl ? (
+            {entitled && portalUrl ? (
+              <a href={portalUrl} className="btn btn-primary" target="_blank" rel="noopener noreferrer">
+                Manage subscription
+              </a>
+            ) : isProLaunched && isPolarConfigured && proUrl ? (
               <a href={proUrl} className="btn btn-primary">Upgrade to Pro — $20/mo</a>
             ) : (
               <Link to="/pricing" className="btn btn-primary">

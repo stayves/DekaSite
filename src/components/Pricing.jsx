@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
-import { getProCheckoutUrl, getTeamContactUrl, isPolarConfigured, isProLaunched } from '../lib/polar.js'
+import {
+  getProCheckoutUrl,
+  getCustomerPortalUrl,
+  getTeamContactUrl,
+  isPolarConfigured,
+  isProLaunched,
+} from '../lib/polar.js'
+import { useSubscription, isEntitled } from '../lib/subscription.js'
 import './Pricing.css'
 
 const tiers = [
@@ -60,6 +67,8 @@ export default function Pricing() {
   const navigate = useNavigate()
   const [working, setWorking] = useState(null)
   const [notice, setNotice] = useState(null)
+  const { subscription } = useSubscription(user)
+  const entitled = isEntitled(subscription)
 
   const onSelect = (tier) => {
     setNotice(null)
@@ -92,6 +101,17 @@ export default function Pricing() {
     }
 
     if (tier.id === 'pro') {
+      // Already subscribed → send to customer portal instead of checkout
+      if (entitled) {
+        const portal = getCustomerPortalUrl(user)
+        if (portal) {
+          window.open(portal, '_blank', 'noopener,noreferrer')
+        } else {
+          navigate('/account')
+        }
+        return
+      }
+
       const url = getProCheckoutUrl(user)
       if (!url) {
         alert(
@@ -102,6 +122,15 @@ export default function Pricing() {
       setWorking(tier.id)
       window.location.href = url
     }
+  }
+
+  const proButtonLabel = (tier) => {
+    if (working === tier.id) return 'Opening checkout…'
+    if (tier.id === 'pro') {
+      if (entitled) return 'Manage subscription'
+      if (!isProLaunched) return 'Available within 24h'
+    }
+    return tier.ctaLabel
   }
 
   return (
@@ -146,11 +175,7 @@ export default function Pricing() {
                 className={`btn ${tier.highlighted ? 'btn-primary' : 'btn-secondary'} pricing-cta`}
                 disabled={working === tier.id}
               >
-                {working === tier.id
-                  ? 'Opening checkout…'
-                  : tier.id === 'pro' && !isProLaunched
-                    ? 'Available within 24h'
-                    : tier.ctaLabel}
+                {proButtonLabel(tier)}
               </button>
             </article>
           ))}

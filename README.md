@@ -126,26 +126,52 @@ cp .env.example .env.local
      https://github.com/settings/developers, callback URL is the same Supabase
      callback, paste client ID + secret into Supabase.
 
-### 3. Polar (billing)
+### 3. Subscriptions table
 
-1. Sign up at https://polar.sh and create an organization.
+Run the SQL in `supabase/migrations/0001_subscriptions.sql` once against
+your Supabase project (Supabase dashboard → SQL Editor → paste → Run).
+This creates the `subscriptions` table and RLS policy that the Polar
+webhook writes to and the Account page reads from.
+
+Also copy your **service role** key from Project Settings → API into
+`SUPABASE_SERVICE_ROLE_KEY` (no `VITE_` prefix — server-side only).
+
+### 4. Polar (billing)
+
+1. Sign up at https://sandbox.polar.sh (test) or https://polar.sh (prod)
+   and create an organization.
 2. Create a **Product** with a recurring monthly price of **$20 USD**.
-3. Open the product → **Checkout Link** → copy the URL. It looks like:
-   `https://buy.polar.sh/polar_cl_XXXXXXXXXX`.
-4. Paste into `.env.local` as `VITE_POLAR_PRO_CHECKOUT_URL`.
+3. Open the product → **Checkout Link** → copy the URL into `.env.local`
+   as `VITE_POLAR_PRO_CHECKOUT_URL`.
+4. Settings → **Customer Portal** — copy the URL into
+   `VITE_POLAR_CUSTOMER_PORTAL_URL`. Subscribed users open this from
+   `/account` to cancel or update payment.
+5. Settings → **Webhooks** → New endpoint:
+   - URL: `https://YOUR-DOMAIN/api/polar-webhook` (use `ngrok http 5173`
+     in dev to expose localhost)
+   - Events: `subscription.created`, `subscription.updated`,
+     `subscription.canceled`, `subscription.revoked`
+   - Copy the signing secret into `POLAR_WEBHOOK_SECRET` (no `VITE_` prefix)
 
-The Pro CTA on `/pricing` opens that URL with the signed-in user's email and
-Supabase user ID attached:
+The Pro CTA on `/pricing` opens checkout with the signed-in user's email,
+Supabase user ID and a return URL:
 
 ```
-https://buy.polar.sh/polar_cl_xxx?customer_email=<email>&metadata[user_id]=<uuid>
+https://buy.polar.sh/polar_cl_xxx?customer_email=<email>&metadata[user_id]=<uuid>&success_url=https://YOUR-DOMAIN/success
 ```
 
-When you're ready to gate features by subscription state, set up a Polar
-webhook → Supabase Edge Function that writes to a `subscriptions` table keyed
-on `metadata[user_id]`.
+When the user pays, Polar fires `subscription.created` to
+`/api/polar-webhook`, which verifies the signature and upserts the row
+into Supabase. The Account page picks it up and shows "Pro".
 
-### 4. Run
+### 5. Launch flag
+
+Pro checkout is gated behind `isProLaunched` in `src/lib/polar.js`.
+While it's `false`, the Pro CTA shows "Available within 24h" and the
+checkout never opens. Flip it to `true` once you've verified the full
+flow in sandbox.
+
+### 6. Run
 
 ```bash
 npm install
@@ -154,4 +180,4 @@ npm run dev
 
 Both `/pricing` and `/login` work without env vars (they show a friendly
 banner). The Pro checkout button only opens once `VITE_POLAR_PRO_CHECKOUT_URL`
-is set.
+is set and `isProLaunched` is true.
