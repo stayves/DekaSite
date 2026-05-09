@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
-import { getProCheckoutUrl, isPolarConfigured } from '../lib/polar.js'
+import { getProCheckoutUrl, isPolarConfigured, isProLaunched } from '../lib/polar.js'
 import './Account.css'
 
 export default function Account() {
@@ -77,10 +77,12 @@ export default function Account() {
           </dl>
 
           <div className="account-actions">
-            {isPolarConfigured && proUrl ? (
+            {isProLaunched && isPolarConfigured && proUrl ? (
               <a href={proUrl} className="btn btn-primary">Upgrade to Pro — $20/mo</a>
             ) : (
-              <Link to="/pricing" className="btn btn-primary">See plans</Link>
+              <Link to="/pricing" className="btn btn-primary">
+                {isProLaunched ? 'See plans' : 'Pro launches within 24h'}
+              </Link>
             )}
             <button type="button" className="btn btn-secondary" onClick={onSignOut} disabled={signingOut}>
               {signingOut ? 'Signing out…' : 'Sign out'}

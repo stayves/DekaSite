@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
-import { getProCheckoutUrl, getTeamContactUrl, isPolarConfigured } from '../lib/polar.js'
+import { getProCheckoutUrl, getTeamContactUrl, isPolarConfigured, isProLaunched } from '../lib/polar.js'
 import './Pricing.css'
 
 const tiers = [
@@ -59,10 +59,18 @@ export default function Pricing() {
   const { user, loading, configured } = useAuth()
   const navigate = useNavigate()
   const [working, setWorking] = useState(null)
+  const [notice, setNotice] = useState(null)
 
   const onSelect = (tier) => {
+    setNotice(null)
+
     if (tier.id === 'team') {
       window.location.href = getTeamContactUrl()
+      return
+    }
+
+    if (tier.id === 'pro' && !isProLaunched) {
+      setNotice("Pro is launching within the next 24 hours. Sign up free in the meantime — we'll email you the moment checkout is live.")
       return
     }
 
@@ -138,7 +146,11 @@ export default function Pricing() {
                 className={`btn ${tier.highlighted ? 'btn-primary' : 'btn-secondary'} pricing-cta`}
                 disabled={working === tier.id}
               >
-                {working === tier.id ? 'Opening checkout…' : tier.ctaLabel}
+                {working === tier.id
+                  ? 'Opening checkout…'
+                  : tier.id === 'pro' && !isProLaunched
+                    ? 'Available within 24h'
+                    : tier.ctaLabel}
               </button>
             </article>
           ))}
@@ -150,12 +162,8 @@ export default function Pricing() {
           <a href={getTeamContactUrl()}>Talk to us</a>.
         </p>
 
-        {!isPolarConfigured && (
-          <p className="pricing-warn">
-            <strong>Heads up:</strong> Polar checkout link is not set yet. Add{' '}
-            <code>VITE_POLAR_PRO_CHECKOUT_URL</code> to your <code>.env.local</code> to wire up the
-            Pro tier.
-          </p>
+        {notice && (
+          <p className="pricing-notice" role="status">{notice}</p>
         )}
       </div>
     </section>
