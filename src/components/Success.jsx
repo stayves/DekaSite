@@ -6,6 +6,7 @@ import {
   RELEASES_PAGE_URL,
   detectPlatform,
 } from '../lib/release.js'
+import MacInstallHelp from './MacInstallHelp.jsx'
 import './Success.css'
 
 const DEKA_PROTOCOL = 'deka://open'
@@ -72,6 +73,8 @@ export default function Success() {
               </>
             )}.
           </p>
+
+          <MacInstallHelp />
         </div>
       </div>
     </section>

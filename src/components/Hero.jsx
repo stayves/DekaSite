@@ -4,6 +4,7 @@ import {
   getLatestMacInstallerUrl,
   RELEASES_PAGE_URL,
 } from '../lib/release.js'
+import MacInstallHelp from './MacInstallHelp.jsx'
 import './Hero.css'
 
 export default function Hero() {
@@ -57,6 +58,9 @@ export default function Hero() {
           <span><CheckIcon /> Free during early access</span>
           <span><CheckIcon /> Windows 10/11 &amp; macOS</span>
         </div>
+
+        <MacInstallHelp />
+
 
         <div className="hero-visual reveal" aria-hidden="true">
           <Terminal />

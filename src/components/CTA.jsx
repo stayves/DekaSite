@@ -4,6 +4,7 @@ import {
   getLatestMacInstallerUrl,
   RELEASES_PAGE_URL,
 } from '../lib/release.js'
+import MacInstallHelp from './MacInstallHelp.jsx'
 import './CTA.css'
 
 export default function CTA() {
@@ -40,6 +41,8 @@ export default function CTA() {
           </div>
 
           <p className="cta-fine">Windows 10/11 · macOS 12+ · 64-bit</p>
+
+          <MacInstallHelp />
         </div>
       </div>
     </section>
