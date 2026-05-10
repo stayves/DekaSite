@@ -95,6 +95,10 @@ Routes:
 - `/pricing` — Free / Pro $20·mo / Team tiers
 - `/login` — email + password, magic link, Google, GitHub (Supabase)
 - `/account` — signed-in user dashboard
+- `/handoff` — one-shot endpoint that hands the current Supabase session
+  to the desktop app via `deka://auth#access_token=…&refresh_token=…&state=…`.
+  The desktop app opens the user's browser to `/handoff?state=<nonce>` and
+  rejects any reply whose state doesn't match.
 
 ### 1. Copy env file
 
@@ -115,6 +119,7 @@ cp .env.example .env.local
    - `http://localhost:5173`
    - `http://localhost:5173/account`
    - `http://localhost:5173/login`
+   - `http://localhost:5173/handoff`
    - your production origin + the same paths
 4. **Authentication → Providers** — enable the ones you want:
    - **Email** is on by default (covers email/password + magic link).

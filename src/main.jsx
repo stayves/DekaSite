@@ -7,6 +7,7 @@ import Pricing from './components/Pricing.jsx'
 import Login from './components/Login.jsx'
 import Account from './components/Account.jsx'
 import Success from './components/Success.jsx'
+import Handoff from './components/Handoff.jsx'
 import Nav from './components/Nav.jsx'
 import Footer from './components/Footer.jsx'
 import { AuthProvider } from './lib/auth.jsx'
@@ -33,6 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/login" element={<Layout withFooter={false}><Login /></Layout>} />
           <Route path="/account" element={<Layout><Account /></Layout>} />
           <Route path="/success" element={<Layout><Success /></Layout>} />
+          <Route path="/handoff" element={<Layout withFooter={false}><Handoff /></Layout>} />
         </Routes>
         <Analytics />
       </AuthProvider>
