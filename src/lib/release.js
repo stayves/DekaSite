@@ -3,7 +3,9 @@ const RELEASES_REPO = 'stayves/DekaReleases'
 export const RELEASES_PAGE_URL = `https://github.com/${RELEASES_REPO}/releases/latest`
 
 const API_URL = `https://api.github.com/repos/${RELEASES_REPO}/releases/latest`
-const WIN_INSTALLER_PATTERN = /^DekaAI-Setup-.*\.exe$/i
+// Match either Deka-Setup-x.y.z.exe (current productName) or
+// DekaAI-Setup-x.y.z.exe (legacy productName, kept for older releases).
+const WIN_INSTALLER_PATTERN = /^Deka(?:AI)?-Setup-.*\.exe$/i
 // Match any .dmg asset, but skip electron-builder sidecar files (.blockmap).
 const MAC_INSTALLER_PATTERN = /\.dmg$/i
 
