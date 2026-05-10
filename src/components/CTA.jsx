@@ -1,14 +1,22 @@
 import { useEffect, useState } from 'react'
-import { getLatestWindowsInstallerUrl, RELEASES_PAGE_URL } from '../lib/release.js'
+import {
+  getLatestWindowsInstallerUrl,
+  getLatestMacInstallerUrl,
+  RELEASES_PAGE_URL,
+} from '../lib/release.js'
 import './CTA.css'
 
 export default function CTA() {
   const [winDownload, setWinDownload] = useState(RELEASES_PAGE_URL)
+  const [macDownload, setMacDownload] = useState(RELEASES_PAGE_URL)
 
   useEffect(() => {
     let cancelled = false
     getLatestWindowsInstallerUrl()
       .then((url) => { if (!cancelled) setWinDownload(url) })
+      .catch(() => {})
+    getLatestMacInstallerUrl()
+      .then((url) => { if (!cancelled) setMacDownload(url) })
       .catch(() => {})
     return () => { cancelled = true }
   }, [])
@@ -26,12 +34,12 @@ export default function CTA() {
             <a href={winDownload} className="btn btn-primary" download>
               Download for Windows
             </a>
-            <button type="button" className="btn btn-secondary coming-soon" aria-disabled="true">
-              macOS <span className="badge">Soon</span>
-            </button>
+            <a href={macDownload} className="btn btn-secondary" download>
+              Download for macOS
+            </a>
           </div>
 
-          <p className="cta-fine">~120 MB · Windows 10 &amp; 11 · 64-bit</p>
+          <p className="cta-fine">Windows 10/11 · macOS 12+ · 64-bit</p>
         </div>
       </div>
     </section>

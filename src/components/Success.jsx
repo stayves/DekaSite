@@ -1,17 +1,27 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getLatestWindowsInstallerUrl, RELEASES_PAGE_URL } from '../lib/release.js'
+import {
+  getLatestWindowsInstallerUrl,
+  getLatestMacInstallerUrl,
+  RELEASES_PAGE_URL,
+  detectPlatform,
+} from '../lib/release.js'
 import './Success.css'
 
 const DEKA_PROTOCOL = 'deka://open'
 
 export default function Success() {
   const [winDownload, setWinDownload] = useState(RELEASES_PAGE_URL)
+  const [macDownload, setMacDownload] = useState(RELEASES_PAGE_URL)
+  const platform = detectPlatform()
 
   useEffect(() => {
     let cancelled = false
     getLatestWindowsInstallerUrl()
       .then((url) => { if (!cancelled) setWinDownload(url) })
+      .catch(() => {})
+    getLatestMacInstallerUrl()
+      .then((url) => { if (!cancelled) setMacDownload(url) })
       .catch(() => {})
     return () => { cancelled = true }
   }, [])
@@ -48,7 +58,19 @@ export default function Success() {
 
           <p className="success-fine">
             Don't have Deka installed yet?{' '}
-            <a href={winDownload} download>Download for Windows</a>.
+            {platform === 'mac' ? (
+              <>
+                <a href={macDownload} download>Download for macOS</a>
+                {' · '}
+                <a href={winDownload} download>Windows</a>
+              </>
+            ) : (
+              <>
+                <a href={winDownload} download>Download for Windows</a>
+                {' · '}
+                <a href={macDownload} download>macOS</a>
+              </>
+            )}.
           </p>
         </div>
       </div>
