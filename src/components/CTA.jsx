@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   getLatestWindowsInstallerUrl,
   getLatestMacInstallerUrl,
+  detectMacArch,
   RELEASES_PAGE_URL,
 } from '../lib/release.js'
 import MacInstallHelp from './MacInstallHelp.jsx'
@@ -16,9 +17,11 @@ export default function CTA() {
     getLatestWindowsInstallerUrl()
       .then((url) => { if (!cancelled) setWinDownload(url) })
       .catch(() => {})
-    getLatestMacInstallerUrl()
-      .then((url) => { if (!cancelled) setMacDownload(url) })
-      .catch(() => {})
+    detectMacArch().then((arch) => {
+      getLatestMacInstallerUrl(arch)
+        .then((url) => { if (!cancelled) setMacDownload(url) })
+        .catch(() => {})
+    })
     return () => { cancelled = true }
   }, [])
 

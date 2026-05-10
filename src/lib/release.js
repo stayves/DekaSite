@@ -39,22 +39,35 @@ export function getLatestWindowsInstallerUrl() {
   })
 }
 
-// Picks the best DMG out of the latest release. electron-builder may emit
-// arch-specific files (`-arm64.dmg`, `-x64.dmg`) and/or a universal one
-// (`-universal.dmg` or no suffix). Prefer the universal/no-suffix build,
-// then Apple-Silicon, then Intel — falls back to whatever DMG is there.
-export function getLatestMacInstallerUrl() {
+// Picks the best DMG out of the latest release for the given arch.
+// electron-builder naming when building both x64 and arm64:
+//   Deka-x.y.z-arm64.dmg   ← Apple Silicon
+//   Deka-x.y.z.dmg          ← Intel/x64 (no suffix because x64 is the default)
+// When building a single arch or universal build, the no-suffix file is
+// whatever was built. So "no suffix" doesn't reliably mean "universal".
+//
+// Priority (for `preferred='arm64'`, the default):
+//   1. universal (suffix "-universal") — runs everywhere
+//   2. arm64 — Apple Silicon native
+//   3. anything else (no suffix or -x64) — Intel native, Rosetta on M-series
+export function getLatestMacInstallerUrl(preferred = 'arm64') {
   return fetchLatestRelease().then((release) => {
     const dmgs = (release.assets || []).filter(
       (a) => MAC_INSTALLER_PATTERN.test(a.name) && !/\.blockmap$/i.test(a.name)
     )
     if (dmgs.length === 0) throw new Error('No macOS installer asset in latest release')
+
     const universal = dmgs.find((a) => /universal/i.test(a.name))
-    if (universal) return universal.browser_download_url
-    const noArch = dmgs.find((a) => !/-arm64\.dmg$/i.test(a.name) && !/-x64\.dmg$/i.test(a.name))
-    if (noArch) return noArch.browser_download_url
     const arm64 = dmgs.find((a) => /-arm64\.dmg$/i.test(a.name))
+    const x64 =
+      dmgs.find((a) => /-x64\.dmg$/i.test(a.name)) ||
+      // electron-builder's multi-arch build leaves the x64 DMG without a suffix.
+      dmgs.find((a) => !/-arm64\.dmg$/i.test(a.name) && !/universal/i.test(a.name))
+
+    if (universal) return universal.browser_download_url
+    if (preferred === 'x64' && x64) return x64.browser_download_url
     if (arm64) return arm64.browser_download_url
+    if (x64) return x64.browser_download_url
     return dmgs[0].browser_download_url
   })
 }
@@ -68,4 +81,26 @@ export function detectPlatform() {
   if (/Mac|iPhone|iPad|iPod/i.test(platform) || /Mac OS X/i.test(ua)) return 'mac'
   if (/Win/i.test(platform) || /Windows/i.test(ua)) return 'win'
   return 'other'
+}
+
+// Detect Mac architecture via the User-Agent Client Hints API (Chrome/Edge).
+// Apple lies in the regular UA string — both Intel and Apple Silicon report
+// "Intel Mac OS X" — so we have to ask through high-entropy hints. Safari and
+// Firefox don't expose this; we default to 'arm64' there because Apple Silicon
+// has been the only Mac sold since 2023 and is the majority of active devices.
+//
+// Returns 'arm64' | 'x64'. Always resolves; never throws.
+export async function detectMacArch() {
+  if (typeof navigator === 'undefined') return 'arm64'
+  try {
+    const data = navigator.userAgentData
+    if (data && typeof data.getHighEntropyValues === 'function') {
+      const hints = await data.getHighEntropyValues(['architecture'])
+      if (hints?.architecture === 'x86') return 'x64'
+      if (hints?.architecture === 'arm') return 'arm64'
+    }
+  } catch {
+    /* hint denied or unsupported — fall through to default */
+  }
+  return 'arm64'
 }

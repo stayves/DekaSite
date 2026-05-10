@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   getLatestWindowsInstallerUrl,
   getLatestMacInstallerUrl,
+  detectMacArch,
   RELEASES_PAGE_URL,
   detectPlatform,
 } from '../lib/release.js'
@@ -21,9 +22,11 @@ export default function Success() {
     getLatestWindowsInstallerUrl()
       .then((url) => { if (!cancelled) setWinDownload(url) })
       .catch(() => {})
-    getLatestMacInstallerUrl()
-      .then((url) => { if (!cancelled) setMacDownload(url) })
-      .catch(() => {})
+    detectMacArch().then((arch) => {
+      getLatestMacInstallerUrl(arch)
+        .then((url) => { if (!cancelled) setMacDownload(url) })
+        .catch(() => {})
+    })
     return () => { cancelled = true }
   }, [])
 
