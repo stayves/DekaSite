@@ -42,6 +42,14 @@ export default function Hero() {
           <a href={macDownload} className="btn btn-secondary" download>
             <AppleIcon /> Download for macOS
           </a>
+          <a
+            href="https://calendly.com/atogambayev/deka-onboarding"
+            className="btn btn-ghost"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <CalendarIcon /> Talk to a founder
+          </a>
         </div>
 
         <div className="hero-meta reveal">
@@ -78,6 +86,15 @@ function CheckIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
       <path d="M2 7.5l3 3 7-7" stroke="#9c83a6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="2" y="3.5" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M2 7h12M5.5 1.5v3M10.5 1.5v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   )
 }
