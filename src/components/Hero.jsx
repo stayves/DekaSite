@@ -11,6 +11,7 @@ import './Hero.css'
 export default function Hero() {
   const [winDownload, setWinDownload] = useState(RELEASES_PAGE_URL)
   const [macDownload, setMacDownload] = useState(RELEASES_PAGE_URL)
+  const [macIntelDownload, setMacIntelDownload] = useState(RELEASES_PAGE_URL)
 
   useEffect(() => {
     let cancelled = false
@@ -22,6 +23,12 @@ export default function Hero() {
         .then((url) => { if (!cancelled) setMacDownload(url) })
         .catch(() => {})
     })
+    // Safari/Firefox can't read arch hints, so detectMacArch() falls back to
+    // arm64 — Intel users on those browsers would land on the wrong DMG. Surface
+    // an explicit Intel link beside the auto-detect button.
+    getLatestMacInstallerUrl('x64')
+      .then((url) => { if (!cancelled) setMacIntelDownload(url) })
+      .catch(() => {})
     return () => { cancelled = true }
   }, [])
 
@@ -45,6 +52,14 @@ export default function Hero() {
           </a>
           <a href={macDownload} className="btn btn-secondary" download>
             <AppleIcon /> Download for macOS
+          </a>
+          <a
+            href={macIntelDownload}
+            className="btn btn-ghost btn-intel"
+            download
+            title="For Intel-based Macs (pre-2020)"
+          >
+            <AppleIcon /> Intel Mac
           </a>
           <a
             href="https://calendly.com/atogambayev/deka-onboarding"

@@ -11,6 +11,7 @@ import './CTA.css'
 export default function CTA() {
   const [winDownload, setWinDownload] = useState(RELEASES_PAGE_URL)
   const [macDownload, setMacDownload] = useState(RELEASES_PAGE_URL)
+  const [macIntelDownload, setMacIntelDownload] = useState(RELEASES_PAGE_URL)
 
   useEffect(() => {
     let cancelled = false
@@ -22,6 +23,9 @@ export default function CTA() {
         .then((url) => { if (!cancelled) setMacDownload(url) })
         .catch(() => {})
     })
+    getLatestMacInstallerUrl('x64')
+      .then((url) => { if (!cancelled) setMacIntelDownload(url) })
+      .catch(() => {})
     return () => { cancelled = true }
   }, [])
 
@@ -41,9 +45,17 @@ export default function CTA() {
             <a href={macDownload} className="btn btn-secondary" download>
               Download for macOS
             </a>
+            <a
+              href={macIntelDownload}
+              className="btn btn-ghost btn-intel"
+              download
+              title="For Intel-based Macs (pre-2020)"
+            >
+              Intel Mac
+            </a>
           </div>
 
-          <p className="cta-fine">Windows 10/11 · macOS 12+ · 64-bit</p>
+          <p className="cta-fine">Windows 10/11 · macOS 12+ · Apple Silicon &amp; Intel · 64-bit</p>
 
           <MacInstallHelp />
         </div>
