@@ -1,0 +1,23 @@
+Drop the three demo clips into this folder using the exact filenames below.
+Once the file exists, the placeholder on the landing page is replaced with the
+video automatically — no code change needed.
+
+Required filenames:
+
+  demo-files-excel.mp4      ← Video 1: Deka opens files, runs Excel
+  demo-workflows.mp4        ← Video 2: show-and-copy workflow recording
+  demo-context-mesh.mp4     ← Video 3: Context Mesh across apps
+
+Optional poster frames (shown as the still image before play):
+
+  demo-files-excel.jpg
+  demo-workflows.jpg
+  demo-context-mesh.jpg
+
+Recommendations:
+  - 16:9, 1080p or higher, H.264 / AAC, < 25 MB per clip for fast load
+  - Keep each clip under ~60 s — landing visitors won't watch more
+  - Trim silence; speed up dead air; loop is not enabled (controls are visible)
+
+If you want to change the filenames, edit the `demos` array in
+src/components/Demos.jsx (each entry has `src` and `poster`).

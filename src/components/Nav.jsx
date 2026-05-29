@@ -25,6 +25,7 @@ export default function Nav() {
         </Link>
         <nav className="nav-links" aria-label="Primary">
           <a href={onLanding ? '#features' : '/#features'}>Features</a>
+          <a href={onLanding ? '#demos' : '/#demos'}>Demos</a>
           <a href={onLanding ? '#showcase' : '/#showcase'}>Showcase</a>
           <a href={onLanding ? '#how' : '/#how'}>How it works</a>
           <Link to="/pricing">Pricing</Link>
