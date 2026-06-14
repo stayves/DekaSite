@@ -3,9 +3,9 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth.jsx'
 import {
   getProCheckoutUrl,
+  getTeamCheckoutUrl,
   getCustomerPortalUrl,
   getTeamContactUrl,
-  isPolarConfigured,
   isProLaunched,
 } from '../lib/polar.js'
 import { useSubscription, isEntitled } from '../lib/subscription.js'
@@ -13,23 +13,8 @@ import './Pricing.css'
 
 const tiers = [
   {
-    id: 'free',
-    name: 'Free',
-    price: '$0',
-    cadence: 'forever',
-    tagline: 'For trying Deka on a personal machine.',
-    features: [
-      'Local-first agent on one device',
-      'Up to 50 actions per day',
-      '7-day workflow memory',
-      'Community support',
-    ],
-    ctaLabel: 'Get started',
-    highlighted: false,
-  },
-  {
     id: 'pro',
-    name: 'Pro',
+    name: 'Personal',
     price: '$20',
     cadence: '/ month',
     tagline: 'For professionals who live across many apps.',
@@ -40,24 +25,24 @@ const tiers = [
       'Priority email support',
       'Early access to new agents',
     ],
-    ctaLabel: 'Start Pro',
+    ctaLabel: 'Start Personal',
     highlighted: true,
     badge: 'Most popular',
   },
   {
     id: 'team',
     name: 'Team',
-    price: 'Custom',
-    cadence: 'billed annually',
-    tagline: 'Shared agents and admin controls for whole teams.',
+    price: '$60',
+    cadence: '/ month',
+    tagline: 'Everything in Personal, plus shared automation for your whole team.',
     features: [
-      'Everything in Pro for every seat',
+      'Everything in Personal for every seat',
+      { text: 'Connect workflows & data across your team', comingSoon: true },
       'Shared workflow library',
-      'SSO / SCIM provisioning',
-      'Audit logs & admin dashboard',
+      'Admin dashboard & audit logs',
       'Dedicated onboarding & SLA',
     ],
-    ctaLabel: 'Contact sales',
+    ctaLabel: 'Start Team',
     highlighted: false,
   },
 ]
@@ -73,13 +58,8 @@ export default function Pricing() {
   const onSelect = (tier) => {
     setNotice(null)
 
-    if (tier.id === 'team') {
-      window.location.href = getTeamContactUrl()
-      return
-    }
-
-    if (tier.id === 'pro' && !isProLaunched) {
-      setNotice("Pro is launching within the next 24 hours. Sign up free in the meantime — we'll email you the moment checkout is live.")
+    if (!isProLaunched) {
+      setNotice("Checkout is launching within the next 24 hours — we'll email you the moment it's live.")
       return
     }
 
@@ -95,41 +75,31 @@ export default function Pricing() {
       return
     }
 
-    if (tier.id === 'free') {
-      navigate('/account')
+    // Already subscribed → send to customer portal instead of checkout
+    if (entitled) {
+      const portal = getCustomerPortalUrl(user)
+      if (portal) {
+        window.open(portal, '_blank', 'noopener,noreferrer')
+      } else {
+        navigate('/account')
+      }
       return
     }
 
-    if (tier.id === 'pro') {
-      // Already subscribed → send to customer portal instead of checkout
-      if (entitled) {
-        const portal = getCustomerPortalUrl(user)
-        if (portal) {
-          window.open(portal, '_blank', 'noopener,noreferrer')
-        } else {
-          navigate('/account')
-        }
-        return
-      }
-
-      const url = getProCheckoutUrl(user)
-      if (!url) {
-        alert(
-          'Polar checkout link not set. Add VITE_POLAR_PRO_CHECKOUT_URL to .env.local — see .env.example.'
-        )
-        return
-      }
-      setWorking(tier.id)
-      window.location.href = url
+    const url = tier.id === 'team' ? getTeamCheckoutUrl(user) : getProCheckoutUrl(user)
+    if (!url) {
+      const envVar = tier.id === 'team' ? 'VITE_POLAR_TEAM_CHECKOUT_URL' : 'VITE_POLAR_PRO_CHECKOUT_URL'
+      alert(`Polar checkout link not set. Add ${envVar} to .env.local — see .env.example.`)
+      return
     }
+    setWorking(tier.id)
+    window.location.href = url
   }
 
-  const proButtonLabel = (tier) => {
+  const buttonLabel = (tier) => {
     if (working === tier.id) return 'Opening checkout…'
-    if (tier.id === 'pro') {
-      if (entitled) return 'Manage subscription'
-      if (!isProLaunched) return 'Available within 24h'
-    }
+    if (!isProLaunched) return 'Available within 24h'
+    if (entitled) return 'Manage subscription'
     return tier.ctaLabel
   }
 
@@ -140,8 +110,8 @@ export default function Pricing() {
           <span className="eyebrow"><span className="dot" />Pricing</span>
           <h1>Simple pricing. Real automation.</h1>
           <p className="pricing-sub">
-            Start free, upgrade when Deka starts running your day. Cancel anytime — your local
-            workflow memory stays on your machine either way.
+            Start with a free trial, upgrade when Deka starts running your day. Cancel anytime —
+            your local workflow memory stays on your machine either way.
           </p>
         </div>
 
@@ -162,11 +132,16 @@ export default function Pricing() {
               </header>
 
               <ul className="pricing-features">
-                {tier.features.map((f) => (
-                  <li key={f}>
-                    <CheckIcon /> {f}
-                  </li>
-                ))}
+                {tier.features.map((f) => {
+                  const text = typeof f === 'string' ? f : f.text
+                  const comingSoon = typeof f === 'object' && f.comingSoon
+                  return (
+                    <li key={text}>
+                      <CheckIcon /> {text}
+                      {comingSoon && <span className="pricing-soon">Coming soon</span>}
+                    </li>
+                  )
+                })}
               </ul>
 
               <button
@@ -175,7 +150,7 @@ export default function Pricing() {
                 className={`btn ${tier.highlighted ? 'btn-primary' : 'btn-secondary'} pricing-cta`}
                 disabled={working === tier.id}
               >
-                {proButtonLabel(tier)}
+                {buttonLabel(tier)}
               </button>
             </article>
           ))}

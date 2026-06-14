@@ -8,6 +8,7 @@ import {
   isProLaunched,
 } from '../lib/polar.js'
 import { useSubscription, isEntitled } from '../lib/subscription.js'
+import { useUsage, usedFraction, isUsageConfigured } from '../lib/usage.js'
 import './Account.css'
 
 const STATUS_LABEL = {
@@ -34,6 +35,7 @@ export default function Account() {
   const navigate = useNavigate()
   const [signingOut, setSigningOut] = useState(false)
   const { subscription, loading: subLoading } = useSubscription(user)
+  const { usage, loading: usageLoading } = useUsage(user)
 
   useEffect(() => {
     if (!loading && !user && configured) {
@@ -78,7 +80,8 @@ export default function Account() {
   }
 
   const entitled = isEntitled(subscription)
-  const planLabel = entitled ? 'Pro' : 'Free'
+  const isTeam = subscription?.tier === 'team'
+  const planLabel = entitled ? (isTeam ? 'Team' : 'Personal') : 'Free trial'
   const statusLabel = subscription ? STATUS_LABEL[subscription.status] || subscription.status : null
   const renewsOn = subscription?.current_period_end ? formatDate(subscription.current_period_end) : null
   const portalUrl = getCustomerPortalUrl(user)
@@ -108,7 +111,7 @@ export default function Account() {
                   <span className="account-hint">Loading…</span>
                 ) : entitled ? (
                   <>
-                    Pro
+                    {planLabel}
                     {statusLabel && statusLabel !== 'Active' && (
                       <span className="account-hint"> — {statusLabel}</span>
                     )}
@@ -121,14 +124,53 @@ export default function Account() {
                   </>
                 ) : (
                   <>
-                    Free
+                    {planLabel}
                     <span className="account-hint">
-                      {isProLaunched ? ' — upgrade for unlimited actions' : ' — Pro launches within 24h'}
+                      {isProLaunched ? ' — upgrade for unlimited actions' : ' — upgrade launches within 24h'}
                     </span>
                   </>
                 )}
               </dd>
             </div>
+
+            {isUsageConfigured && (
+              <div>
+                <dt>Usage this period</dt>
+                <dd>
+                  {usageLoading ? (
+                    <span className="account-hint">Loading…</span>
+                  ) : usage ? (
+                    <>
+                      <div
+                        style={{
+                          height: 8,
+                          borderRadius: 999,
+                          background: 'rgba(127,127,127,0.18)',
+                          overflow: 'hidden',
+                          margin: '4px 0 6px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${Math.round(usedFraction(usage) * 100)}%`,
+                            background: 'linear-gradient(90deg,#7c5cff,#41d1a7)',
+                            borderRadius: 999,
+                            transition: 'width .3s',
+                          }}
+                        />
+                      </div>
+                      <span className="account-hint">
+                        {Math.round(usedFraction(usage) * 100)}% used
+                        {renewsOn ? ` — resets ${renewsOn}` : ' — resets monthly'}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="account-hint">Unavailable</span>
+                  )}
+                </dd>
+              </div>
+            )}
           </dl>
 
           <div className="account-actions">
@@ -137,10 +179,10 @@ export default function Account() {
                 Manage subscription
               </a>
             ) : isProLaunched && isPolarConfigured && proUrl ? (
-              <a href={proUrl} className="btn btn-primary">Upgrade to Pro — $20/mo</a>
+              <a href={proUrl} className="btn btn-primary">Upgrade to Personal — $20/mo</a>
             ) : (
               <Link to="/pricing" className="btn btn-primary">
-                {isProLaunched ? 'See plans' : 'Pro launches within 24h'}
+                {isProLaunched ? 'See plans' : 'Plans launch within 24h'}
               </Link>
             )}
             <button type="button" className="btn btn-secondary" onClick={onSignOut} disabled={signingOut}>

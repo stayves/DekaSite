@@ -39,14 +39,60 @@ function verifySignature(rawBody, headers, secret) {
   })
 }
 
+function pickEmail(sub) {
+  return sub.customer?.email || sub.customer_email || sub.metadata?.customer_email || null
+}
+
+function pickExternalId(sub) {
+  // We set Polar's external customer id = Supabase user_id at checkout.
+  return sub.customer?.external_id || sub.metadata?.user_id || null
+}
+
+// Resolve the Supabase user this subscription belongs to. Try, in order:
+//   1) explicit metadata.user_id set at checkout
+//   2) Polar's external customer id (= user_id, set at checkout)
+//   3) email match against auth.users (covers metadata loss / portal edits)
+async function resolveUserId(supabase, sub) {
+  const email = pickEmail(sub)
+  const externalId = pickExternalId(sub)
+  let userId = sub.metadata?.user_id || null
+
+  if (!userId && externalId) userId = externalId
+
+  if (!userId && email) {
+    const { data, error } = await supabase.rpc('deka_user_id_by_email', { p_email: email })
+    if (error) console.warn('[polar-webhook] email lookup failed:', error.message)
+    else if (data) userId = data
+  }
+  return { userId, email, externalId }
+}
+
 async function handleSubscriptionEvent(supabase, event) {
   const sub = event.data
   if (!sub) return
 
-  // user_id is attached at checkout time via metadata (see src/lib/polar.js)
-  const userId = sub.metadata?.user_id
+  const { userId, email, externalId } = await resolveUserId(supabase, sub)
+
+  // Never silently drop: park unlinked events so they can be reconciled later
+  // (e.g. once the user signs in, or a later event carries the linkage).
   if (!userId) {
-    console.warn('[polar-webhook] subscription event missing metadata.user_id, skipping', sub.id)
+    console.error('[polar-webhook] could not link subscription to a user — parking', {
+      polar_subscription_id: sub.id,
+      polar_customer_id: sub.customer_id ?? null,
+      email,
+      type: event.type,
+    })
+    await supabase.from('pending_subscriptions').upsert(
+      {
+        polar_subscription_id: sub.id,
+        polar_customer_id: sub.customer_id ?? null,
+        email,
+        status: sub.status ?? null,
+        raw: sub,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'polar_subscription_id' },
+    )
     return
   }
 
@@ -55,13 +101,21 @@ async function handleSubscriptionEvent(supabase, event) {
     return
   }
 
+  // Distinguish the $60/mo Team product from the $20/mo Personal product by its
+  // Polar product id. Defaults to 'pro' (Personal) when the env var is unset or
+  // the id doesn't match, so existing Personal subscriptions are unaffected.
+  const tier =
+    sub.product_id && sub.product_id === process.env.POLAR_TEAM_PRODUCT_ID ? 'team' : 'pro'
+
   const row = {
     user_id: userId,
     polar_customer_id: sub.customer_id ?? null,
     polar_subscription_id: sub.id,
     polar_product_id: sub.product_id ?? null,
     status: sub.status,
-    tier: 'pro',
+    tier,
+    email,
+    external_customer_id: externalId,
     current_period_start: sub.current_period_start ?? null,
     current_period_end: sub.current_period_end ?? null,
     cancel_at_period_end: Boolean(sub.cancel_at_period_end),
@@ -71,6 +125,9 @@ async function handleSubscriptionEvent(supabase, event) {
     .from('subscriptions')
     .upsert(row, { onConflict: 'user_id' })
   if (error) throw error
+
+  // Clear any earlier parked copy of this subscription now that it's linked.
+  await supabase.from('pending_subscriptions').delete().eq('polar_subscription_id', sub.id)
 }
 
 export default async function handler(req, res) {

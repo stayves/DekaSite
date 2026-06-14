@@ -1,0 +1,33 @@
+# Deka model proxy — metered, subscription-gated LLM gateway.
+# Deploy:  cd DekaSite/proxy && npm i && npx wrangler deploy
+#
+# Secrets (NOT in this file — set with `npx wrangler secret put <NAME>`):
+#   SUPABASE_SERVICE_ROLE_KEY   service role key (server-only; bypasses RLS)
+#   ANTHROPIC_POOL_KEY          your pooled Anthropic key (the dev's key)
+#   GEMINI_POOL_KEY             your pooled Google AI Studio key
+#   KIMI_POOL_KEY               your pooled Kimi/Moonshot (or Gonka) bearer token
+#                               — the PRIMARY pooled source. `wrangler secret put KIMI_POOL_KEY`
+#   SUPABASE_JWT_SECRET         ONLY if your project still uses legacy HS256
+#                               JWTs. Leave unset to verify via JWKS (asymmetric).
+
+name = "deka-proxy"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Public, non-secret. Replace with your project URL.
+SUPABASE_URL = "https://YOUR-PROJECT.supabase.co"
+# Kimi OpenAI-root the proxy appends /chat/completions to. Moonshot's own /v1,
+# a Gonka Supabase broker (https://…/functions/v1/gonka), OpenRouter, etc.
+KIMI_BASE_URL = "https://api.moonshot.ai/v1"
+# Optional: pin the pooled Kimi model regardless of what the client sends
+# (cost control). Leave unset to honor the model the desktop requests.
+KIMI_POOL_MODEL = "kimi-k2.6"
+
+# Optional: bind a KV namespace named RATE_LIMIT to enable per-user request
+# rate limiting (Phase 4). Create with `npx wrangler kv namespace create RATE_LIMIT`
+# then uncomment and paste the id:
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT"
+# id = "..."

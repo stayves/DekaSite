@@ -1,0 +1,12 @@
+# Copy to `.dev.vars` for local `wrangler dev`. NEVER commit `.dev.vars`.
+SUPABASE_URL="https://YOUR-PROJECT.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="eyJ...service-role..."
+ANTHROPIC_POOL_KEY="sk-ant-..."
+GEMINI_POOL_KEY="AIza..."
+# Pooled Kimi — the PRIMARY source. KIMI_POOL_KEY is the only secret; the rest
+# can live in wrangler.toml [vars].
+KIMI_POOL_KEY="sk-...moonshot-or-gonka..."
+KIMI_BASE_URL="https://api.moonshot.ai/v1"
+KIMI_POOL_MODEL="kimi-k2.6"
+# Only if your Supabase project still issues legacy HS256 JWTs:
+# SUPABASE_JWT_SECRET="your-jwt-secret"

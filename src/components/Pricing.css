@@ -26,7 +26,8 @@
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 360px));
+  justify-content: center;
   gap: 24px;
   align-items: stretch;
 }
@@ -139,6 +140,22 @@
 }
 
 .is-featured .pricing-features svg { color: var(--white); }
+
+.pricing-soon {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(140, 180, 255, 0.12);
+  border: 1px solid rgba(140, 180, 255, 0.3);
+  color: #c7d6ff;
+  white-space: nowrap;
+  vertical-align: middle;
+}
 
 .pricing-cta {
   width: 100%;

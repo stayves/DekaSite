@@ -47,9 +47,9 @@ export default function Success() {
           </div>
 
           <span className="eyebrow"><span className="dot" />Subscription active</span>
-          <h1>Successful — welcome to Pro.</h1>
+          <h1>Successful — your subscription is active.</h1>
           <p className="success-sub">
-            Your payment went through and your account is now on the Pro plan. Open Deka on your
+            Your payment went through and your account is now active. Open Deka on your
             desktop to start using unlimited actions, long-term memory and every native integration.
           </p>
 

@@ -36,7 +36,7 @@ export default function CTA() {
           <div className="cta-glow" aria-hidden="true" />
           <span className="eyebrow"><span className="dot" />Get started</span>
           <h2>Bring Deka onto your desktop.</h2>
-          <p>Free during early access. Download the installer, sign in once, and Deka starts mapping the apps you already use.</p>
+          <p>Start with a free trial. Download the installer, sign in once, and Deka starts mapping the apps you already use.</p>
 
           <div className="cta-actions">
             <a href={winDownload} className="btn btn-primary" download>
