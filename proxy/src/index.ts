@@ -58,6 +58,19 @@ export default {
       return err(401, 'auth_failed')
     }
 
+    // Telegram app credential — the single shared "Deka" api_id/api_hash, served
+    // to any signed-in user. Gated by a valid JWT only (NOT quota), so it sits
+    // before the entitlement / hard-cap checks: a quota-exceeded user can still
+    // connect Telegram. The real per-user secret is the phone-login session,
+    // saved client-side — never here.
+    if (req.method === 'GET' && url.pathname === '/telegram/app-credential') {
+      if (!env.TELEGRAM_API_ID || !env.TELEGRAM_API_HASH) return err(503, 'telegram_unconfigured')
+      return Response.json(
+        { api_id: Number(env.TELEGRAM_API_ID), api_hash: env.TELEGRAM_API_HASH },
+        { headers: { 'cache-control': 'private, max-age=86400', ...corsHeaders(req) } },
+      )
+    }
+
     let ent
     try {
       ent = await getEntitlement(env, caller.userId)

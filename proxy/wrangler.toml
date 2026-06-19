@@ -16,11 +16,11 @@ compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-# Public, non-secret. Replace with your project URL.
-SUPABASE_URL = "https://YOUR-PROJECT.supabase.co"
+# Public, non-secret. The Supabase project the desktop app + website sign into.
+SUPABASE_URL = "https://cxnnubtqclerfndvyoqg.supabase.co"
 # Kimi OpenAI-root the proxy appends /chat/completions to. Moonshot's own /v1,
 # a Gonka Supabase broker (https://…/functions/v1/gonka), OpenRouter, etc.
-KIMI_BASE_URL = "https://api.moonshot.ai/v1"
+KIMI_BASE_URL = "https://api.gonka-api.org/v1"
 # Optional: pin the pooled Kimi model regardless of what the client sends
 # (cost control). Leave unset to honor the model the desktop requests.
 KIMI_POOL_MODEL = "kimi-k2.6"

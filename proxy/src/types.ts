@@ -20,6 +20,14 @@ export interface Env {
   KIMI_POOL_KEY: string
   KIMI_BASE_URL?: string
   KIMI_POOL_MODEL?: string
+  /**
+   * The single registered "Deka" Telegram app credential, served to any
+   * signed-in user by GET /telegram/app-credential. Secrets, NOT in source:
+   * `wrangler secret put TELEGRAM_API_ID` / `TELEGRAM_API_HASH`. The real
+   * per-user secret is the phone-login session, saved client-side.
+   */
+  TELEGRAM_API_ID?: string
+  TELEGRAM_API_HASH?: string
   /** Optional KV for per-user rate limiting (Phase 4). */
   RATE_LIMIT?: KVNamespace
 }
