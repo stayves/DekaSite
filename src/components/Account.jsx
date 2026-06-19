@@ -81,7 +81,16 @@ export default function Account() {
 
   const entitled = isEntitled(subscription)
   const isTeam = subscription?.tier === 'team'
-  const planLabel = entitled ? (isTeam ? 'Team' : 'Personal') : 'Free trial'
+  const isTrialing = subscription?.status === 'trialing'
+  // Trial access only comes from a real Polar trial (status === 'trialing').
+  // Non-subscribers get no pooled access, so they read "Not subscribed".
+  const planLabel = !entitled
+    ? 'Not subscribed'
+    : isTrialing
+      ? 'Free trial'
+      : isTeam
+        ? 'Team'
+        : 'Personal'
   const statusLabel = subscription ? STATUS_LABEL[subscription.status] || subscription.status : null
   const renewsOn = subscription?.current_period_end ? formatDate(subscription.current_period_end) : null
   const portalUrl = getCustomerPortalUrl(user)
@@ -112,21 +121,21 @@ export default function Account() {
                 ) : entitled ? (
                   <>
                     {planLabel}
-                    {statusLabel && statusLabel !== 'Active' && (
+                    {statusLabel && statusLabel !== 'Active' && !isTrialing && (
                       <span className="account-hint"> — {statusLabel}</span>
                     )}
                     {subscription?.cancel_at_period_end && renewsOn && (
                       <span className="account-hint"> — ends {renewsOn}</span>
                     )}
                     {!subscription?.cancel_at_period_end && renewsOn && (
-                      <span className="account-hint"> — renews {renewsOn}</span>
+                      <span className="account-hint"> — {isTrialing ? 'trial ends' : 'renews'} {renewsOn}</span>
                     )}
                   </>
                 ) : (
                   <>
                     {planLabel}
                     <span className="account-hint">
-                      {isProLaunched ? ' — upgrade for unlimited actions' : ' — upgrade launches within 24h'}
+                      {isProLaunched ? ' — start a free trial to use Deka' : ' — plans launch within 24h'}
                     </span>
                   </>
                 )}
@@ -179,7 +188,7 @@ export default function Account() {
                 Manage subscription
               </a>
             ) : isProLaunched && isPolarConfigured && proUrl ? (
-              <a href={proUrl} className="btn btn-primary">Upgrade to Personal — $20/mo</a>
+              <a href={proUrl} className="btn btn-primary">Start free trial</a>
             ) : (
               <Link to="/pricing" className="btn btn-primary">
                 {isProLaunched ? 'See plans' : 'Plans launch within 24h'}

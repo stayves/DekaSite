@@ -73,7 +73,7 @@ export default function Hero() {
 
         <div className="hero-meta reveal">
           <span><CheckIcon /> Runs locally on your machine</span>
-          <span><CheckIcon /> Free trial — no card required</span>
+          <span><CheckIcon /> Free trial — cancel anytime</span>
           <span><CheckIcon /> Windows 10/11 &amp; macOS</span>
         </div>
 

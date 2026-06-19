@@ -21,10 +21,10 @@ export const MODELS = {
 //              free user's agentic loop keeps running instead of erroring.
 export const PLAN_MODELS: Record<Plan, { allow: string[]; downgrade: Record<string, string> }> = {
   free: {
-    // Pooled traffic runs on Kimi (the founder's primary source) for both
-    // tiers — free vs pro differ by the hard cost cap below, not the model.
-    // Haiku stays allowed for the legacy Anthropic-pooled route. The main
-    // loop's Sonnet request is still downgraded to Haiku on that route.
+    // Non-subscribers. The ZERO hard cap in PLAN_LIMITS blocks pooled traffic
+    // before it ever runs (overHardCap returns true on the first request → 429),
+    // so this allow/downgrade policy is effectively unused. It's kept only to
+    // satisfy Record<Plan> and as the fallback policy if the cap is ever raised.
     allow: [MODELS.kimi, MODELS.kimiPrev, MODELS.haiku],
     downgrade: {
       [MODELS.sonnet]: MODELS.haiku,
@@ -58,9 +58,14 @@ export const PLAN_MODELS: Record<Plan, { allow: string[]; downgrade: Record<stri
   },
 }
 
-// Hard caps per billing (Pro) / calendar (Free) period. Tune to your margin.
+// Hard caps per billing period. Non-subscribers (`free`) get NO pooled access:
+// the only free usage is a real Polar trial, which arrives as `trialing` status
+// and resolves to plan `pro`/`team` (entitled), NOT `free`. So `free` is a ZERO
+// cap — overHardCap() returns true on the very first request and the proxy
+// answers 429 quota_exceeded. Users who paste their OWN API key call the provider
+// directly and never hit this proxy, so they are unaffected. Tune pro/team to margin.
 export const PLAN_LIMITS: Record<Plan, { maxTokens: number; maxCostUsd: number }> = {
-  free: { maxTokens: 1_000_000, maxCostUsd: 1 },
+  free: { maxTokens: 0, maxCostUsd: 0 },
   pro: { maxTokens: 50_000_000, maxCostUsd: 60 },
   // Team is $60/mo per seat — give it a higher ceiling than Pro. Tune to margin.
   team: { maxTokens: 100_000_000, maxCostUsd: 120 },

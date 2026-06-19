@@ -50,7 +50,8 @@ export async function handleKimi(
   }
 
   const base = (env.KIMI_BASE_URL || DEFAULT_KIMI_BASE).replace(/\/+$/, '')
-  const upstream = await fetch(`${base}/chat/completions`, {
+  const url = `${base}/chat/completions`
+  const init: RequestInit = {
     method: 'POST',
     signal: req.signal, // propagate client abort (user pressed Stop)
     headers: {
@@ -58,11 +59,39 @@ export async function handleKimi(
       authorization: `Bearer ${env.KIMI_POOL_KEY}`,
     },
     body: JSON.stringify(body),
-  })
+  }
 
-  if (!upstream.ok || !upstream.body) {
-    return new Response(await upstream.text(), {
-      status: upstream.status,
+  // Gonka's gateway intermittently 502/503/504s on heavier/slower (reasoning)
+  // requests even though the same call succeeds on retry. Without this, a single
+  // transient blip fails the user's whole agent turn. Retry transient 5xx (and
+  // network throws) with backoff; log the upstream failure so it's visible in
+  // `wrangler tail` (the proxy was previously silent on pass-through errors).
+  const RETRYABLE = new Set([502, 503, 504])
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+  let upstream: Response | null = null
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      upstream = await fetch(url, init)
+    } catch (e) {
+      if (req.signal.aborted) throw e // user pressed Stop — don't retry
+      console.error(`[proxy] kimi fetch threw (attempt ${attempt + 1}):`, (e as Error).message)
+      if (attempt < 2) { await sleep(500 * (attempt + 1)); continue }
+      return err(502, 'upstream_unreachable')
+    }
+    if (RETRYABLE.has(upstream.status) && attempt < 2) {
+      const peek = await upstream.text().catch(() => '')
+      console.error(`[proxy] kimi upstream ${upstream.status} (attempt ${attempt + 1}), retrying: ${peek.slice(0, 300)}`)
+      await sleep(500 * (attempt + 1))
+      continue
+    }
+    break
+  }
+
+  if (!upstream || !upstream.ok || !upstream.body) {
+    const peek = upstream ? await upstream.text().catch(() => '') : ''
+    console.error(`[proxy] kimi upstream failed: ${upstream?.status ?? 'no-response'} ${peek.slice(0, 500)}`)
+    return new Response(peek || JSON.stringify({ type: 'error', error: { type: 'upstream_error', message: 'upstream_error' } }), {
+      status: upstream?.status ?? 502,
       headers: { 'content-type': 'application/json' },
     })
   }
