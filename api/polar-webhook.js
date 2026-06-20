@@ -1,9 +1,10 @@
 import { Buffer } from 'node:buffer'
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { createClient } from '@supabase/supabase-js'
 
 // Vercel: disable JSON body parsing so we can verify the signature against
 // the raw bytes Polar sent. Standard-Webhooks signs the exact request body.
+// (@supabase/supabase-js is loaded lazily inside the handler — see below — so a
+//  cold-start import failure surfaces as a readable 500 instead of a 502.)
 export const config = { api: { bodyParser: false } }
 
 async function readRawBody(req) {
@@ -24,7 +25,10 @@ function verifySignature(rawBody, headers, secret) {
   const ts = Number(timestamp)
   if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false
 
-  const cleanSecret = secret.startsWith('whsec_') ? secret.slice(6) : secret
+  // Standard Webhooks secrets are base64 after a prefix. Polar presents the
+  // secret as `polar_whs_…`; the original Standard-Webhooks convention is
+  // `whsec_…`. Strip either so the HMAC key is the same bytes Polar signed with.
+  const cleanSecret = secret.replace(/^(whsec_|polar_whs_)/, '')
   const secretBytes = Buffer.from(cleanSecret, 'base64')
 
   const signedContent = `${id}.${timestamp}.${rawBody.toString('utf-8')}`
@@ -131,48 +135,63 @@ async function handleSubscriptionEvent(supabase, event) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST')
-    return res.status(405).json({ error: 'method not allowed' })
-  }
-
-  const secret = process.env.POLAR_WEBHOOK_SECRET
-  const supabaseUrl = process.env.VITE_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!secret || !supabaseUrl || !serviceKey) {
-    console.error('[polar-webhook] missing env: POLAR_WEBHOOK_SECRET / VITE_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY')
-    return res.status(500).json({ error: 'misconfigured' })
-  }
-
-  let rawBody
+  // Outermost boundary: any unexpected throw becomes a readable 500 with the
+  // error message instead of a silent process crash that Vercel's edge reports
+  // as an opaque 502 (FUNCTION_INVOCATION_FAILED). This is what makes the real
+  // failure visible in both the response body and the function logs.
   try {
-    rawBody = await readRawBody(req)
-  } catch {
-    return res.status(400).json({ error: 'cannot read body' })
-  }
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', 'POST')
+      return res.status(405).json({ error: 'method not allowed' })
+    }
 
-  if (!verifySignature(rawBody, req.headers, secret)) {
-    return res.status(401).json({ error: 'invalid signature' })
-  }
+    const secret = process.env.POLAR_WEBHOOK_SECRET
+    const supabaseUrl = process.env.VITE_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  let event
-  try {
-    event = JSON.parse(rawBody.toString('utf-8'))
-  } catch {
-    return res.status(400).json({ error: 'invalid json' })
-  }
+    if (!secret || !supabaseUrl || !serviceKey) {
+      console.error('[polar-webhook] missing env: POLAR_WEBHOOK_SECRET / VITE_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY')
+      return res.status(500).json({ error: 'misconfigured' })
+    }
 
-  const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+    let rawBody
+    try {
+      rawBody = await readRawBody(req)
+    } catch {
+      return res.status(400).json({ error: 'cannot read body' })
+    }
 
-  try {
+    if (!verifySignature(rawBody, req.headers, secret)) {
+      return res.status(401).json({ error: 'invalid signature' })
+    }
+
+    let event
+    try {
+      event = JSON.parse(rawBody.toString('utf-8'))
+    } catch {
+      return res.status(400).json({ error: 'invalid json' })
+    }
+
+    // Lazy-load the Supabase client. If the dependency fails to resolve in the
+    // deployed bundle (a common silent-502 cause), this turns the cold-start
+    // crash into a catchable, readable 500 right here.
+    let createClient
+    try {
+      ({ createClient } = await import('@supabase/supabase-js'))
+    } catch (err) {
+      console.error('[polar-webhook] failed to load @supabase/supabase-js:', err)
+      return res.status(500).json({ error: 'supabase client load failed', message: String(err?.message || err) })
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+
     if (event?.type?.startsWith('subscription.')) {
       await handleSubscriptionEvent(supabase, event)
     }
-  } catch (err) {
-    console.error('[polar-webhook] handler error:', err)
-    return res.status(500).json({ error: 'handler failed' })
-  }
 
-  return res.status(200).json({ ok: true })
+    return res.status(200).json({ ok: true })
+  } catch (err) {
+    console.error('[polar-webhook] unhandled error:', err)
+    return res.status(500).json({ error: 'handler crashed', message: String(err?.message || err) })
+  }
 }
